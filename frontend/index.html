@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Shopping List</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 40px 16px;
+            font-family: Arial, sans-serif;
+            background: #f3f5f7;
+            color: #263238;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #77838d;
+            margin-bottom: 28px;
+            font-size: 14px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 13px;
+            border: 1px solid #dce2e6;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            background: #287c70;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #20665c;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 14px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 13px 14px;
+            margin-bottom: 9px;
+            background: #f3f7f6;
+            border-radius: 8px;
+            border: 1px solid #e5eeeb;
+        }
+
+        .message {
+            margin-top: 18px;
+            color: #287c70;
+            font-size: 13px;
+            min-height: 18px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #9aa3a9;
+            font-size: 12px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 480px) {
+            .input-area {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>My Shopping List</h1>
+        <p class="subtitle">
+            Keep track of the things you need to buy.
+        </p>
+
+        <div class="input-area">
+            <input
+                type="text"
+                id="itemInput"
+                placeholder="Enter an item..."
+            >
+            <button onclick="addItem()">Add Item</button>
+        </div>
+
+        <h2>My Items</h2>
+
+        <ul id="itemList">
+            <li>Loading items...</li>
+        </ul>
+
+        <div class="message" id="result"></div>
+
+        <div class="footer">
+            Powered by Kubernetes · Flask · PostgreSQL
+        </div>
+    </div>
+
+    <script>
+        async function loadItems() {
+            const list = document.getElementById("itemList");
+
+            try {
+                const response = await fetch("/api/data");
+
+                if (!response.ok) {
+                    throw new Error("Could not load items.");
+                }
+
+                const items = await response.json();
+                list.innerHTML = "";
+
+                if (items.length === 0) {
+                    list.textContent = "Your shopping list is empty.";
+                    return;
+                }
+
+                items.forEach(item => {
+                    const li = document.createElement("li");
+                    li.textContent = "🛒 " + item.message;
+                    list.appendChild(li);
+                });
+
+            } catch (error) {
+                list.textContent = "Could not connect to the server.";
+            }
+        }
+
+        async function addItem() {
+            const input = document.getElementById("itemInput");
+            const result = document.getElementById("result");
+            const item = input.value.trim();
+
+            if (!item) {
+                result.textContent = "Please enter an item.";
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    "/api/add/" + encodeURIComponent(item)
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error("Could not save item.");
+                }
+
+                result.textContent = "Item added successfully!";
+                input.value = "";
+
+                await loadItems();
+
+            } catch (error) {
+                result.textContent = "Something went wrong.";
+            }
+        }
+
+        loadItems();
+    </script>
+</body>
+</html>

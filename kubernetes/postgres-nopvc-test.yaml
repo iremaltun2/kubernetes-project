@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-nopvc
+spec:
+  clusterIP: None
+  selector:
+    app: postgres-nopvc
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-nopvc
+spec:
+  serviceName: postgres-nopvc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-nopvc
+  template:
+    metadata:
+      labels:
+        app: postgres-nopvc
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: testdb
+            - name: POSTGRES_USER
+              value: testuser
+            - name: POSTGRES_PASSWORD
+              value: testpass123
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - testuser
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: temporary-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: temporary-storage
+          emptyDir: {}
